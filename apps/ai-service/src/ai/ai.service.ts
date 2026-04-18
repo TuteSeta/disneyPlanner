@@ -19,7 +19,10 @@ export class AiService {
 
     this.tripClient = ClientProxyFactory.create({
       transport: Transport.TCP,
-      options: { host: '127.0.0.1', port: 4001 },
+      options: {
+        host: this.config.get<string>('TRIP_SERVICE_HOST') ?? 'localhost',
+        port: this.config.get<number>('TRIP_SERVICE_PORT') ?? 4001,
+      },
     });
   }
 

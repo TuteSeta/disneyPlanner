@@ -1,0 +1,72 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_NAME}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  trip-service:
+    build:
+      context: .
+      dockerfile: apps/trip-service/Dockerfile
+    environment:
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_NAME: ${DB_NAME}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  scheduler-service:
+    build:
+      context: .
+      dockerfile: apps/scheduler-service/Dockerfile
+    environment:
+      TRIP_SERVICE_HOST: trip-service
+      TRIP_SERVICE_PORT: 4001
+      THEMEPARKS_API: https://api.themeparks.wiki/v1
+    depends_on:
+      - trip-service
+
+  ai-service:
+    build:
+      context: .
+      dockerfile: apps/ai-service/Dockerfile
+    environment:
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      TRIP_SERVICE_HOST: trip-service
+      TRIP_SERVICE_PORT: 4001
+    depends_on:
+      - trip-service
+
+  api-gateway:
+    build:
+      context: .
+      dockerfile: apps/api-gateway/Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+      TRIP_SERVICE_HOST: trip-service
+      TRIP_SERVICE_PORT: 4001
+      SCHEDULER_SERVICE_HOST: scheduler-service
+      SCHEDULER_SERVICE_PORT: 4002
+      AI_SERVICE_HOST: ai-service
+      AI_SERVICE_PORT: 4003
+    depends_on:
+      - trip-service
+      - scheduler-service
+      - ai-service
+
+volumes:
+  postgres_data:
