@@ -116,21 +116,112 @@ The final product of the scheduler is a structured JSON response containing the 
 
 ## 🚀 Getting Started
 
-1. Clone the repository & Install dependencies:
-   ```bash
-   git clone <repository-url>
-   cd my-disney-planner
-   npm install
-   ```
+### Prerequisites
 
-2. Run the services via configured npm scripts:
-   ```bash
-   # In separate terminal windows or using a runner
-   npm run start:gateway
-   npm run start:trip
-   npm run start:scheduler
-   npm run start:ai
-   ```
+- [Docker](https://www.docker.com/get-started) + Docker Compose
+- An [Anthropic API key](https://console.anthropic.com) (for the AI enrichment service)
+
+### 1. Clone the repo
+
+```bash
+git clone <repository-url>
+cd my-disney-planner
+```
+
+### 2. Configure environment variables
+
+```bash
+cp .env.example .env
+```
+
+Open `.env` and fill in your values:
+
+| Variable | Description |
+|---|---|
+| `DB_USERNAME` | PostgreSQL user (e.g. `postgres`) |
+| `DB_PASSWORD` | PostgreSQL password |
+| `DB_NAME` | Database name (e.g. `disney_trip_service`) |
+| `ANTHROPIC_API_KEY` | Your Anthropic key from [console.anthropic.com](https://console.anthropic.com) |
+
+### 3. Start all services
+
+```bash
+docker compose up --build
+```
+
+This starts 5 containers: `postgres`, `trip-service`, `scheduler-service`, `ai-service`, and `api-gateway`.  
+The API will be available at **http://localhost:3000**.
+
+To stop everything:
+
+```bash
+docker compose down
+```
+
+To also delete the database volume:
+
+```bash
+docker compose down -v
+```
+
+---
+
+## 🔌 API Reference
+
+All requests go through the API Gateway at `http://localhost:3000`.
+
+### Trips
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/trips` | Create a new trip |
+| `GET` | `/trips` | List all trips |
+| `GET` | `/trips/:id` | Get a trip by ID |
+| `PATCH` | `/trips/:id` | Update a trip |
+| `DELETE` | `/trips/:id` | Delete a trip |
+
+### Trip Days
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `PATCH` | `/trips/days/:id` | Update a trip day (e.g. `dayType`, `locationLabel`) |
+
+### Travelers
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/trips/:tripId/travelers` | Add a traveler to a trip |
+| `PATCH` | `/trips/travelers/:id` | Update a traveler |
+| `DELETE` | `/trips/travelers/:id` | Remove a traveler |
+
+### Activities
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/trips/activities` | Add a custom activity |
+| `PATCH` | `/trips/activities/:id` | Update an activity |
+| `DELETE` | `/trips/activities/:id` | Delete an activity |
+
+### Calendar
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/trips/:id/calendar` | Get the full calendar for a trip |
+| `GET` | `/trips/:id/calendar/:dayNumber` | Get a specific day's schedule |
+
+### Planner (AI-powered)
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/planner/plan` | Generate + enrich a full itinerary |
+
+### AI Enrichment
+
+| Method | Endpoint | Description |
+|---|---|---|
+| `POST` | `/ai/enrich` | Enrich a saved schedule with AI suggestions |
+
+---
 
 ## 📝 License
 

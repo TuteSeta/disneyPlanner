@@ -88,9 +88,10 @@ export class TripsService {
     return this.findTripById(id);
   }
 
-  async deleteTrip(id: number): Promise<void> {
+  async deleteTrip(id: number): Promise<{ ok: boolean }> {
     const trip = await this.findTripById(id);
     await this.tripRepo.remove(trip);
+    return { ok: true };
   }
 
   // ─── Trip Days ────────────────────────────────────────────────────────────
@@ -117,10 +118,11 @@ export class TripsService {
     return this.travelerRepo.save(traveler);
   }
 
-  async removeTraveler(id: number): Promise<void> {
+  async removeTraveler(id: number): Promise<{ ok: boolean }> {
     const traveler = await this.travelerRepo.findOne({ where: { id } });
     if (!traveler) throw new NotFoundException(`Traveler with id ${id} not found.`);
     await this.travelerRepo.remove(traveler);
+    return { ok: true };
   }
 
   // ─── Activities ───────────────────────────────────────────────────────────
@@ -140,10 +142,11 @@ export class TripsService {
     return this.activityRepo.save(activity);
   }
 
-  async deleteActivity(id: number): Promise<void> {
+  async deleteActivity(id: number): Promise<{ ok: boolean }> {
     const activity = await this.activityRepo.findOne({ where: { id } });
     if (!activity) throw new NotFoundException(`Activity with id ${id} not found.`);
     await this.activityRepo.remove(activity);
+    return { ok: true };
   }
 
   // ─── Schedule ─────────────────────────────────────────────────────────────
