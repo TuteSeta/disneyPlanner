@@ -1,0 +1,18 @@
+{
+  "name": "my-disney-planner",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "start:gateway": "npm run start:dev --workspace=apps/api-gateway",
+    "start:trip": "npm run start:dev --workspace=apps/trip-service",
+    "start:scheduler": "npm run start:dev --workspace=apps/scheduler-service",
+    "start:ai": "npm run start:dev --workspace=apps/ai-service"
+  },
+  "dependencies": {
+    "@nestjs/microservices": "^11.1.19"
+  }
+}

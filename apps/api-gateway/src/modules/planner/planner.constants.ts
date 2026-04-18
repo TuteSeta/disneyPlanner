@@ -1,0 +1,3 @@
+export const TRIP_SERVICE = 'TRIP_SERVICE';
+export const SCHEDULER_SERVICE = 'SCHEDULER_SERVICE';
+export const AI_SERVICE = 'AI_SERVICE';
