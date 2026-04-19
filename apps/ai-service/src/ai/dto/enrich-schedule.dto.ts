@@ -1,4 +1,4 @@
-import { IsEnum, IsInt } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString } from 'class-validator';
 
 export class EnrichScheduleDto {
   @IsInt()
@@ -12,4 +12,8 @@ export class EnrichScheduleDto {
 
   @IsEnum(['low', 'medium', 'high'])
   budget: 'low' | 'medium' | 'high';
+
+  @IsOptional()
+  @IsString()
+  locationLabel?: string;
 }

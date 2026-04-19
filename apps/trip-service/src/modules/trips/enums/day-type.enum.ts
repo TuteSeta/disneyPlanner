@@ -1,6 +1,7 @@
 export enum DayType {
   DISNEY = 'DISNEY',
   UNIVERSAL = 'UNIVERSAL',
+  OTHER_PARK = 'OTHER_PARK',
   SHOPPING = 'SHOPPING',
   REST = 'REST',
   MIXED = 'MIXED',

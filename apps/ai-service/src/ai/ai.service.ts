@@ -6,6 +6,65 @@ import { firstValueFrom } from 'rxjs';
 import { EnrichScheduleDto } from './dto/enrich-schedule.dto';
 import { PlanTripDto } from './dto/plan-trip.dto';
 
+const PLAN_TRIP_SYSTEM = `Eres un experto planificador de vacaciones en Orlando, Florida.
+
+Tu tarea: devolver un plan completo de viaje en formato JSON (solo JSON, sin texto adicional, sin markdown).
+
+Reglas:
+- Inferí las fechas absolutas (YYYY-MM-DD). Si el usuario dice "22 de diciembre al 7 de enero" y la fecha ya pasó este año, usá el próximo ciclo.
+- Generá un objeto "travelers" con el arreglo exacto. Si el usuario dice "11 personas (2 niños y 9 adultos)", creá 11 entries con nombres genéricos ("Adulto 1", "Niño 1", etc.) y edad aproximada (adulto=30, niño=8).
+- Distribuí los días según lo que pidió el usuario. Para viajes largos (10+ días) intercalá descansos.
+- Para días de parque, elegí el parque que tenga más sentido por orden de visita, clima, día de la semana. No repitas parques a menos que el viaje sea muy largo.
+- Para DISNEY: recomendá Lightning Lane solo si el día es de alta demanda (fin de semana, Navidad, feriados, atracciones populares). Si lo recomendás, explicá brevemente por qué.
+- Para UNIVERSAL: recomendá Fast Pass con los mismos criterios.
+- Para OTHER_PARK (Legoland, SeaWorld, Busch Gardens, etc.): usá dayType "OTHER_PARK" y elegí el parkId de la lista "other". passRecommendation siempre null.
+- Para SHOPPING y REST, inferí el budget del texto ("normal" → "medium").
+- intensity: "relaxed" si hay niños o adultos mayores, "normal" por default, "aggressive" si pidieron "ver todo".
+
+Devolvé este JSON exacto:
+
+{
+  "trip": {
+    "name": "string — nombre sugerido del viaje, DEBE incluir los años que corresponden a startDate y endDate (ej: si startDate=2026-12-22 y endDate=2027-01-07, usar '2026-2027', nunca inventar años)",
+    "startDate": "YYYY-MM-DD",
+    "endDate": "YYYY-MM-DD",
+    "description": "string — 1 oración resumen",
+    "travelers": [
+      { "name": "string", "age": number }
+    ]
+  },
+  "preferences": {
+    "intensity": "relaxed" | "normal" | "aggressive",
+    "hasKids": boolean
+  },
+  "days": [
+    {
+      "dayNumber": number,
+      "date": "YYYY-MM-DD",
+      "dayType": "DISNEY" | "UNIVERSAL" | "OTHER_PARK" | "REST" | "SHOPPING",
+      "locationLabel": "string — ej: 'Magic Kingdom', 'Legoland Florida', 'Disney Springs', 'Hotel + Spa'",
+      "parkId": "string — para DISNEY/UNIVERSAL/OTHER_PARK, usar ID exacto de la lista correspondiente",
+      "passRecommendation": "string | null — solo DISNEY/UNIVERSAL; explicar por qué recomendás Lightning Lane/Fast Pass o null si no vale la pena",
+      "budget": "low" | "medium" | "high" | null
+    }
+  ]
+}
+
+Responde ÚNICAMENTE con el JSON, sin bloques de código, sin texto extra.`;
+
+const ENRICH_SYSTEM = `Eres un experto en viajes a Orlando, Florida.
+
+Generá exactamente 4 actividades recomendadas en formato JSON array.
+Cada actividad debe tener estos campos exactos:
+- name: string (nombre de la actividad)
+- activityType: string (ej: "DINING", "SHOPPING", "SPA", "POOL", "WALK", "EXPERIENCE")
+- startTime: string (formato "HH:MM", distribuidas entre 09:00 y 21:00)
+- endTime: string (formato "HH:MM")
+- priority: number (1-4, siendo 1 la más importante)
+- notes: string (recomendación breve de 1 oración)
+
+Responde ÚNICAMENTE con el JSON array, sin texto adicional.`;
+
 @Injectable()
 export class AiService {
   private readonly logger = new Logger(AiService.name);
@@ -42,7 +101,7 @@ export class AiService {
               endTime: '21:00',
               groups: [
                 {
-                  area: dto.dayType === 'REST' ? 'Relaxation' : 'Shopping District',
+                  area: dto.locationLabel ?? (dto.dayType === 'REST' ? 'Relaxation' : 'Shopping District'),
                   sortOrder: 1,
                   activities,
                 },
@@ -60,13 +119,29 @@ export class AiService {
   }
 
   async planTrip(dto: PlanTripDto) {
-    const prompt = this.buildPlanPrompt(dto);
     this.logger.log(`Planning trip from description (${dto.description.length} chars)`);
 
+    const today = new Date().toISOString().split('T')[0];
+    const parksJson = dto.availableParks
+      ? JSON.stringify(dto.availableParks, null, 2)
+      : 'null (no disponibles — devolvé parkId vacío)';
+
     const message = await this.anthropic.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 8192,
-      messages: [{ role: 'user', content: prompt }],
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 2048,
+      system: [
+        {
+          type: 'text',
+          text: PLAN_TRIP_SYSTEM,
+          cache_control: { type: 'ephemeral' },
+        },
+      ],
+      messages: [
+        {
+          role: 'user',
+          content: `Hoy es ${today}.\n\nParques disponibles (usá exactamente estos IDs):\n${parksJson}\n\nDescripción del viaje:\n"""\n${dto.description}\n"""`,
+        },
+      ],
     });
 
     const text = (message.content[0] as { type: string; text: string }).text;
@@ -75,90 +150,7 @@ export class AiService {
     return plan;
   }
 
-  private buildPlanPrompt(dto: PlanTripDto): string {
-    const today = new Date().toISOString().split('T')[0];
-    const parksJson = dto.availableParks
-      ? JSON.stringify(dto.availableParks, null, 2)
-      : 'null (no disponibles — devolvé parkId vacío)';
-
-    return `Eres un experto planificador de vacaciones en Orlando, Florida.
-
-Hoy es ${today}. El usuario escribió esta descripción de su viaje:
-
-"""
-${dto.description}
-"""
-
-Parques disponibles (usa exactamente estos IDs cuando asignes un parque a un día):
-${parksJson}
-
-Tu tarea: devolver un plan completo de viaje en formato JSON (solo JSON, sin texto adicional, sin markdown).
-
-Reglas:
-- Inferí las fechas absolutas (YYYY-MM-DD). Si el usuario dice "22 de diciembre al 7 de enero" y la fecha ya pasó este año, usá el próximo ciclo.
-- Generá un objeto "travelers" con el arreglo exacto. Si el usuario dice "11 personas (2 niños y 9 adultos)", creá 11 entries con nombres genéricos ("Adulto 1", "Niño 1", etc.) y edad aproximada (adulto=30, niño=8).
-- Distribuí los días según lo que pidió el usuario. Para viajes largos (10+ días) intercalá descansos.
-- Para días de parque, elegí el parque que tenga más sentido por orden de visita, clima, día de la semana. No repitas parques a menos que el viaje sea muy largo.
-- Para DISNEY: recomendá Lightning Lane solo si el día es de alta demanda (fin de semana, Navidad, feriados, atracciones populares). Si lo recomendás, explicá brevemente por qué.
-- Para UNIVERSAL: recomendá Fast Pass con los mismos criterios.
-- Para SHOPPING y REST, inferí el budget del texto ("normal" → "medium").
-- intensity: "relaxed" si hay niños o adultos mayores, "normal" por default, "aggressive" si pidieron "ver todo".
-
-Devolvé este JSON exacto:
-
-{
-  "trip": {
-    "name": "string — nombre sugerido del viaje, DEBE incluir los años que corresponden a startDate y endDate (ej: si startDate=2026-12-22 y endDate=2027-01-07, usar '2026-2027', nunca inventar años)",
-    "startDate": "YYYY-MM-DD",
-    "endDate": "YYYY-MM-DD",
-    "description": "string — 1 oración resumen",
-    "travelers": [
-      { "name": "string", "age": number }
-    ]
-  },
-  "preferences": {
-    "intensity": "relaxed" | "normal" | "aggressive",
-    "hasKids": boolean
-  },
-  "days": [
-    {
-      "dayNumber": number,
-      "date": "YYYY-MM-DD",
-      "dayType": "DISNEY" | "UNIVERSAL" | "REST" | "SHOPPING",
-      "locationLabel": "string — ej: 'Magic Kingdom', 'Disney Springs', 'Hotel + Spa'",
-      "parkId": "string — solo para DISNEY/UNIVERSAL, usar ID exacto de la lista",
-      "passRecommendation": "string | null — solo DISNEY/UNIVERSAL; explicar por qué recomendás Lightning Lane/Fast Pass o null si no vale la pena",
-      "budget": "low" | "medium" | "high" | null
-    }
-  ]
-}
-
-Responde ÚNICAMENTE con el JSON, sin bloques de código, sin texto extra.`;
-  }
-
-  private parseJsonObject(text: string) {
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) {
-      this.logger.error('No JSON object found in response', text);
-      throw new Error('Claude response did not contain a valid JSON object');
-    }
-    return JSON.parse(match[0]);
-  }
-
   private async generateActivities(dto: EnrichScheduleDto) {
-    const prompt = this.buildPrompt(dto);
-
-    const message = await this.anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      messages: [{ role: 'user', content: prompt }],
-    });
-
-    const text = (message.content[0] as { type: string; text: string }).text;
-    return this.parseActivities(text);
-  }
-
-  private buildPrompt(dto: EnrichScheduleDto): string {
     const budgetDescriptions = {
       low: 'bajo presupuesto (gratuito o económico)',
       medium: 'presupuesto moderado',
@@ -170,19 +162,35 @@ Responde ÚNICAMENTE con el JSON, sin bloques de código, sin texto extra.`;
       SHOPPING: 'día de compras en Orlando',
     };
 
-    return `Eres un experto en viajes a Orlando, Florida.
-El viajero tiene un ${typeDescriptions[dto.dayType]} con ${budgetDescriptions[dto.budget]}.
+    const message = await this.anthropic.messages.create({
+      model: 'claude-haiku-4-5-20251001',
+      max_tokens: 1024,
+      system: [
+        {
+          type: 'text',
+          text: ENRICH_SYSTEM,
+          cache_control: { type: 'ephemeral' },
+        },
+      ],
+      messages: [
+        {
+          role: 'user',
+          content: `El viajero tiene un ${typeDescriptions[dto.dayType]} con ${budgetDescriptions[dto.budget]}. Ubicación del día: ${dto.locationLabel ?? 'Orlando, Florida'}. Generá actividades específicas y coherentes con esa ubicación.`,
+        },
+      ],
+    });
 
-Genera exactamente 4 actividades recomendadas en formato JSON array.
-Cada actividad debe tener estos campos exactos:
-- name: string (nombre de la actividad)
-- activityType: string (ej: "DINING", "SHOPPING", "SPA", "POOL", "WALK", "EXPERIENCE")
-- startTime: string (formato "HH:MM", distribuidas entre 09:00 y 21:00)
-- endTime: string (formato "HH:MM")
-- priority: number (1-4, siendo 1 la más importante)
-- notes: string (recomendación breve de 1 oración)
+    const text = (message.content[0] as { type: string; text: string }).text;
+    return this.parseActivities(text);
+  }
 
-Responde ÚNICAMENTE con el JSON array, sin texto adicional.`;
+  private parseJsonObject(text: string) {
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) {
+      this.logger.error('No JSON object found in response', text);
+      throw new Error('Claude response did not contain a valid JSON object');
+    }
+    return JSON.parse(match[0]);
   }
 
   private parseActivities(text: string) {

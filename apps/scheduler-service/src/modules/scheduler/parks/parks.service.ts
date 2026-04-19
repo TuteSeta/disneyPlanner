@@ -48,6 +48,7 @@ export class ParksService {
   async getAllOrlandoParks(): Promise<{
     disney: { id: string; name: string }[];
     universal: { id: string; name: string }[];
+    other: { id: string; name: string }[];
   }> {
     const res = await fetch(`${this.baseUrl}/destinations`);
     const data = (await res.json()) as {
@@ -56,15 +57,27 @@ export class ParksService {
 
     const destinations = data.destinations ?? [];
 
+    const OTHER_ORLANDO_SLUGS = [
+      'legoland-florida',
+      'seaworldorlando',
+      'buschgardenstampa',
+    ];
+
     const wdw = destinations.find((d) => d.slug === 'waltdisneyworldresort');
     const universal = destinations.find((d) => d.slug === 'universalorlando');
+    const otherDestinations = destinations.filter((d) =>
+      OTHER_ORLANDO_SLUGS.includes(d.slug),
+    );
 
-    const [disney, universalParks] = await Promise.all([
+    const otherParks = otherDestinations.flatMap((d) => d.parks ?? []);
+
+    const [disney, universalParks, other] = await Promise.all([
       this.keepOperating(wdw?.parks ?? []),
       this.keepOperating(universal?.parks ?? []),
+      this.keepOperating(otherParks),
     ]);
 
-    return { disney, universal: universalParks };
+    return { disney, universal: universalParks, other };
   }
 
   private async keepOperating(

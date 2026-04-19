@@ -14,8 +14,8 @@ export class DayAssignmentDto {
   @IsInt()
   dayId: number;
 
-  @IsEnum(['DISNEY', 'UNIVERSAL', 'REST', 'SHOPPING'])
-  dayType: 'DISNEY' | 'UNIVERSAL' | 'REST' | 'SHOPPING';
+  @IsEnum(['DISNEY', 'UNIVERSAL', 'OTHER_PARK', 'REST', 'SHOPPING'])
+  dayType: 'DISNEY' | 'UNIVERSAL' | 'OTHER_PARK' | 'REST' | 'SHOPPING';
 
   @IsOptional()
   @IsString()

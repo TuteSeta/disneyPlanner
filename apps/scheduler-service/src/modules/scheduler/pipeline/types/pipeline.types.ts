@@ -9,7 +9,7 @@ export interface SchedulePreferences {
   hasKids: boolean;
 }
 
-export type DayType = 'DISNEY' | 'UNIVERSAL' | 'REST' | 'SHOPPING';
+export type DayType = 'DISNEY' | 'UNIVERSAL' | 'OTHER_PARK' | 'REST' | 'SHOPPING';
 
 export interface DayInput {
   dayId: number;

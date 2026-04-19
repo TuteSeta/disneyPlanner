@@ -6,7 +6,7 @@ import { AI_SERVICE, SCHEDULER_SERVICE, TRIP_SERVICE } from './planner.constants
 interface PlannedDay {
   dayNumber: number;
   date: string;
-  dayType: 'DISNEY' | 'UNIVERSAL' | 'REST' | 'SHOPPING';
+  dayType: 'DISNEY' | 'UNIVERSAL' | 'OTHER_PARK' | 'REST' | 'SHOPPING';
   locationLabel?: string;
   parkId?: string;
   passRecommendation?: string | null;
@@ -95,7 +95,7 @@ export class PlannerService {
     );
 
     const parkDays = aiPlan.days
-      .filter((d) => d.dayType === 'DISNEY' || d.dayType === 'UNIVERSAL')
+      .filter((d) => d.dayType === 'DISNEY' || d.dayType === 'UNIVERSAL' || d.dayType === 'OTHER_PARK')
       .map((d) => ({
         dayId: dayIdByNumber.get(d.dayNumber)!,
         dayType: d.dayType,
@@ -130,6 +130,7 @@ export class PlannerService {
               dayId,
               dayType: day.dayType,
               budget: day.budget ?? 'medium',
+              locationLabel: day.locationLabel,
             }),
           );
         }),
