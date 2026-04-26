@@ -22,6 +22,11 @@ export class AvailableParksDto {
   @ValidateNested({ each: true })
   @Type(() => ParkOptionDto)
   universal: ParkOptionDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ParkOptionDto)
+  other: ParkOptionDto[];
 }
 
 export class PlanTripDto {
