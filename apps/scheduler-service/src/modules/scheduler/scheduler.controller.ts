@@ -12,8 +12,8 @@ export class SchedulerController {
     return this.schedulerService.generateSchedule(dto);
   }
 
-  @MessagePattern('get_orlando_parks')
-  getOrlandoParks() {
-    return this.schedulerService.getOrlandoParks();
+  @MessagePattern('get_available_parks')
+  getAvailableParks() {
+    return this.schedulerService.getAvailableParks();
   }
 }

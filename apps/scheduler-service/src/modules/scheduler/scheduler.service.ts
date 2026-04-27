@@ -16,24 +16,28 @@ export class SchedulerService {
     @Inject(TRIP_SERVICE) private readonly tripClient: ClientProxy,
   ) {}
 
-  getOrlandoParks() {
-    return this.parksService.getAllOrlandoParks();
+  getAvailableParks() {
+    return this.parksService.getAllAvailableParks();
   }
 
   async generateSchedule(dto: GenerateScheduleDto) {
-    const preferences = {
-      intensity: dto.preferences.intensity,
-      priorityAttractions: dto.preferences.priorityAttractions ?? [],
-      hasKids: dto.preferences.hasKids ?? false,
+    const context = {
+      tripId: dto.tripId,
+      destinationSlug: dto.destinationSlug ?? 'waltdisneyworldresort',
+      days: dto.days.map((d) => ({
+        dayId: d.dayId,
+        dayType: d.dayType,
+        parkId: d.parkId,
+      })),
+      preferences: {
+        intensity: dto.preferences.intensity,
+        priorityAttractions: dto.preferences.priorityAttractions ?? [],
+        hasKids: dto.preferences.hasKids ?? false,
+        budget: dto.preferences.budget ?? 'medium',
+      },
     };
 
-    const days = dto.days.map((d) => ({
-      dayId: d.dayId,
-      dayType: d.dayType,
-      parkId: d.parkId,
-    }));
-
-    const schedule = await this.pipeline.execute(dto.tripId, days, preferences);
+    const schedule = await this.pipeline.execute(context);
 
     this.logger.log(`Saving schedule for trip ${dto.tripId} to trip-service`);
     await firstValueFrom(this.tripClient.send('save_schedule', schedule));

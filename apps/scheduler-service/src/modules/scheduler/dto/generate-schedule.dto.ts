@@ -14,8 +14,8 @@ export class DayAssignmentDto {
   @IsInt()
   dayId: number;
 
-  @IsEnum(['DISNEY', 'UNIVERSAL', 'OTHER_PARK', 'REST', 'SHOPPING'])
-  dayType: 'DISNEY' | 'UNIVERSAL' | 'OTHER_PARK' | 'REST' | 'SHOPPING';
+  @IsEnum(['THEME_PARK', 'SHOPPING', 'REST', 'MIXED', 'SIGHTSEEING'])
+  dayType: 'THEME_PARK' | 'SHOPPING' | 'REST' | 'MIXED' | 'SIGHTSEEING';
 
   @IsOptional()
   @IsString()
@@ -35,11 +35,19 @@ export class SchedulePreferencesDto {
   @IsOptional()
   @IsBoolean()
   hasKids?: boolean;
+
+  @IsEnum(['low', 'medium', 'high'])
+  @IsOptional()
+  budget?: 'low' | 'medium' | 'high';
 }
 
 export class GenerateScheduleDto {
   @IsInt()
   tripId: number;
+
+  @IsString()
+  @IsOptional()
+  destinationSlug?: string;
 
   @IsArray()
   @ValidateNested({ each: true })

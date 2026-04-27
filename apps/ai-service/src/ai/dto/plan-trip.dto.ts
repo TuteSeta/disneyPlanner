@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsArray,
+  IsInt,
   IsNotEmpty,
   IsOptional,
   IsString,
@@ -16,17 +17,7 @@ export class AvailableParksDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => ParkOptionDto)
-  disney: ParkOptionDto[];
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ParkOptionDto)
-  universal: ParkOptionDto[];
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ParkOptionDto)
-  other: ParkOptionDto[];
+  themeParks: ParkOptionDto[];
 }
 
 export class PlanTripDto {
@@ -38,4 +29,9 @@ export class PlanTripDto {
   @ValidateNested()
   @Type(() => AvailableParksDto)
   availableParks?: AvailableParksDto;
+
+  @IsInt()
+  @IsOptional()
+  maxTokens?: number;
 }
+

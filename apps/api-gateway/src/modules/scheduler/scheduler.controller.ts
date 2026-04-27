@@ -11,7 +11,7 @@ export class SchedulerController {
   }
 
   @Get('parks')
-  getOrlandoParks() {
-    return this.schedulerService.getOrlandoParks();
+  getAvailableParks() {
+    return this.schedulerService.getAvailableParks();
   }
 }

@@ -3,13 +3,23 @@ export type BlockType = 'morning' | 'midday' | 'afternoon' | 'evening';
 export type AttractionStatus = 'OPERATING' | 'DOWN' | 'CLOSED' | 'REFURBISHMENT';
 export type AttractionEntityType = 'ATTRACTION' | 'SHOW' | 'EXPERIENCE' | 'RESTAURANT';
 
+export type Budget = 'low' | 'medium' | 'high';
+
 export interface SchedulePreferences {
   intensity: Intensity;
   priorityAttractions: string[];
   hasKids: boolean;
+  budget: Budget;
 }
 
-export type DayType = 'DISNEY' | 'UNIVERSAL' | 'OTHER_PARK' | 'REST' | 'SHOPPING';
+export interface PlanningContext {
+  tripId: number;
+  destinationSlug: string;
+  days: DayInput[];
+  preferences: SchedulePreferences;
+}
+
+export type DayType = 'THEME_PARK' | 'SHOPPING' | 'REST' | 'MIXED' | 'SIGHTSEEING';
 
 export interface DayInput {
   dayId: number;

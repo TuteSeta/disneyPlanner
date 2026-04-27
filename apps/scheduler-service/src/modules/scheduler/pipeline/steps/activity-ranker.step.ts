@@ -25,6 +25,15 @@ export class ActivityRankerStep {
     if (attraction.waitTime >= 60) score += 20;
     else if (attraction.waitTime >= 30) score += 10;
 
+    if (preferences.hasKids) {
+      const FAMILY_KEYWORDS = ['junior', 'family', 'kiddie', 'children', 'little', 'barnstormer', 'dumbo'];
+      const isFamilyFriendly = FAMILY_KEYWORDS.some((kw) =>
+        attraction.name.toLowerCase().includes(kw),
+      );
+      if (isFamilyFriendly) score += 25;
+      if (attraction.entityType === 'SHOW') score += 15;
+    }
+
     return score;
   }
 

@@ -13,7 +13,7 @@ export class SchedulerService {
     return firstValueFrom(this.client.send('generate_schedule', body));
   }
 
-  getOrlandoParks() {
-    return firstValueFrom(this.client.send('get_orlando_parks', {}));
+  getAvailableParks() {
+    return firstValueFrom(this.client.send('get_available_parks', {}));
   }
 }

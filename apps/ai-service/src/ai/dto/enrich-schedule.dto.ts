@@ -16,4 +16,8 @@ export class EnrichScheduleDto {
   @IsOptional()
   @IsString()
   locationLabel?: string;
+
+  @IsInt()
+  @IsOptional()
+  maxTokens?: number;
 }

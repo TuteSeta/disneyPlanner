@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { DayInput, DaySchedule, GeneratedSchedule, SchedulePreferences } from './types/pipeline.types';
+import { DaySchedule, GeneratedSchedule, PlanningContext } from './types/pipeline.types';
 import { ActivityLoaderStep } from './steps/activity-loader.step';
 import { ActivityRankerStep } from './steps/activity-ranker.step';
 import { TimeBlockBuilderStep } from './steps/time-block-builder.step';
@@ -20,11 +20,8 @@ export class PipelineService {
     private readonly conflictResolver: ConflictResolverStep,
   ) {}
 
-  async execute(
-    tripId: number,
-    days: DayInput[],
-    preferences: SchedulePreferences,
-  ): Promise<GeneratedSchedule> {
+  async execute(context: PlanningContext): Promise<GeneratedSchedule> {
+    const { tripId, days, preferences } = context;
     this.logger.log(`Starting pipeline for trip ${tripId} — ${days.length} days`);
 
     // Step 1 — Load attractions from ThemeParks.wiki
@@ -52,8 +49,8 @@ export class PipelineService {
       // Step 5 — Assign HH:MM time slots
       const timed = this.timeSlotAssigner.execute(grouped);
 
-      // Step 6 — Drop activities that overflow the block
-      const resolved = this.conflictResolver.execute(timed);
+      // Step 6 — Drop activities that overflow the block or exceed budget cap
+      const resolved = this.conflictResolver.execute(timed, preferences.budget);
 
       scheduledDays.push({ dayId: day.dayId, dayType: day.dayType, timeBlocks: resolved });
     }

@@ -37,15 +37,14 @@ export class TripDay {
 
   /**
    * Human-readable label for the day's location or theme.
-   * Intentionally free-form to avoid hard-coded park names.
-   * Examples: "Magic Kingdom", "Rest Day", "Disney Springs", "City Tour"
+   * Examples: "Magic Kingdom", "Rest Day", "City Tour"
    */
   @Column({ type: 'varchar', length: 255, nullable: true })
   locationLabel: string | null;
 
   /**
-   * Recomendación de pass premium (Lightning Lane para DISNEY,
-   * Fast Pass para UNIVERSAL). Null si no aplica o no se recomienda.
+   * Recommendation for premium passes.
+   * Null if not applicable or not recommended.
    */
   @Column({ type: 'text', nullable: true })
   passRecommendation: string | null;

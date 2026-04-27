@@ -45,39 +45,34 @@ export class ParksService {
       .filter((a) => a.status === 'OPERATING');
   }
 
-  async getAllOrlandoParks(): Promise<{
-    disney: { id: string; name: string }[];
-    universal: { id: string; name: string }[];
-    other: { id: string; name: string }[];
-  }> {
+  async getParksForDestination(destinationSlug: string): Promise<{ id: string; name: string }[]> {
     const res = await fetch(`${this.baseUrl}/destinations`);
     const data = (await res.json()) as {
       destinations?: { slug: string; parks?: ThemeParksChild[] }[];
     };
 
-    const destinations = data.destinations ?? [];
+    const destination = data.destinations?.find((d) => d.slug === destinationSlug);
+    if (!destination || !destination.parks) return [];
 
-    const OTHER_ORLANDO_SLUGS = [
+    return this.keepOperating(destination.parks);
+  }
+
+  async getAllAvailableParks(): Promise<{
+    themeParks: { id: string; name: string }[];
+  }> {
+    const ORLANDO_SLUGS = [
+      'waltdisneyworldresort',
+      'universalorlando',
       'legoland-florida',
       'seaworldorlando',
       'buschgardenstampa',
     ];
 
-    const wdw = destinations.find((d) => d.slug === 'waltdisneyworldresort');
-    const universal = destinations.find((d) => d.slug === 'universalorlando');
-    const otherDestinations = destinations.filter((d) =>
-      OTHER_ORLANDO_SLUGS.includes(d.slug),
+    const allParks = await Promise.all(
+      ORLANDO_SLUGS.map((slug) => this.getParksForDestination(slug)),
     );
 
-    const otherParks = otherDestinations.flatMap((d) => d.parks ?? []);
-
-    const [disney, universalParks, other] = await Promise.all([
-      this.keepOperating(wdw?.parks ?? []),
-      this.keepOperating(universal?.parks ?? []),
-      this.keepOperating(otherParks),
-    ]);
-
-    return { disney, universal: universalParks, other };
+    return { themeParks: allParks.flat() };
   }
 
   private async keepOperating(

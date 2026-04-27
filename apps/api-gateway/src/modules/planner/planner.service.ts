@@ -6,7 +6,7 @@ import { AI_SERVICE, SCHEDULER_SERVICE, TRIP_SERVICE } from './planner.constants
 interface PlannedDay {
   dayNumber: number;
   date: string;
-  dayType: 'DISNEY' | 'UNIVERSAL' | 'OTHER_PARK' | 'REST' | 'SHOPPING';
+  dayType: 'THEME_PARK' | 'SHOPPING' | 'REST' | 'MIXED' | 'SIGHTSEEING';
   locationLabel?: string;
   parkId?: string;
   passRecommendation?: string | null;
@@ -51,13 +51,23 @@ export class PlannerService {
   async plan(description: string) {
     this.logger.log('Fetching available parks');
     const availableParks = await firstValueFrom(
-      this.schedulerClient.send('get_orlando_parks', {}),
+      this.schedulerClient.send('get_available_parks', {}),
     );
 
     this.logger.log('Asking AI to plan the trip');
-    const aiPlan: AiPlan = await firstValueFrom(
-      this.aiClient.send('plan_trip', { description, availableParks }),
-    );
+    let aiPlan: AiPlan;
+    try {
+      aiPlan = await firstValueFrom(
+        this.aiClient.send('plan_trip', { 
+          description, 
+          availableParks,
+          maxTokens: 3000,
+        }),
+      );
+    } catch (err) {
+      this.logger.warn('AI planning failed or unavailable', err);
+      return { success: false, error: 'ai_unavailable' };
+    }
 
     this.logger.log(
       `Creating trip "${aiPlan.trip.name}" (${aiPlan.trip.startDate} → ${aiPlan.trip.endDate})`,
@@ -95,7 +105,7 @@ export class PlannerService {
     );
 
     const parkDays = aiPlan.days
-      .filter((d) => d.dayType === 'DISNEY' || d.dayType === 'UNIVERSAL' || d.dayType === 'OTHER_PARK')
+      .filter((d) => d.dayType === 'THEME_PARK')
       .map((d) => ({
         dayId: dayIdByNumber.get(d.dayNumber)!,
         dayType: d.dayType,
@@ -131,6 +141,7 @@ export class PlannerService {
               dayType: day.dayType,
               budget: day.budget ?? 'medium',
               locationLabel: day.locationLabel,
+              maxTokens: 1000,
             }),
           );
         }),

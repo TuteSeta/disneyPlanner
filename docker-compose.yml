@@ -63,6 +63,7 @@ services:
       SCHEDULER_SERVICE_PORT: 4002
       AI_SERVICE_HOST: ai-service
       AI_SERVICE_PORT: 4003
+      API_KEYS: ${API_KEYS}
     depends_on:
       - trip-service
       - scheduler-service
