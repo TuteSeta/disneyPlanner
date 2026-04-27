@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Migration1776453353176 } from './migrations/1776453353176-Migration';
 import { Migration1776545610420 } from './migrations/1776545610420-Migration';
 import { AddOtherParkDayType1776551491559 } from './migrations/1776551491559-AddOtherParkDayType';
+import { GenericDayTypeEnum1777296183311 } from './migrations/1777296183311-GenericDayTypeEnum';
 
 import { TripsModule } from './modules/trips/trips.module';
 import { Trip } from './modules/trips/entities/trip.entity';
@@ -27,7 +28,7 @@ import { Activity } from './modules/trips/entities/activity.entity';
         password: config.get<string>('DB_PASSWORD'),
         database: config.get<string>('DB_NAME'),
         entities: [Trip, TripDay, Traveler, TimeBlock, ActivityGroup, Activity],
-        migrations: [Migration1776453353176, Migration1776545610420, AddOtherParkDayType1776551491559],
+        migrations: [Migration1776453353176, Migration1776545610420, AddOtherParkDayType1776551491559, GenericDayTypeEnum1777296183311],
         migrationsRun: true,
         synchronize: false,
       }),

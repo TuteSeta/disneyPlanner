@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ClientProxy } from '@nestjs/microservices';
-import { firstValueFrom } from 'rxjs';
+import { firstValueFrom, timeout } from 'rxjs';
 import { AI_SERVICE, SCHEDULER_SERVICE, TRIP_SERVICE } from './planner.constants';
 
 interface PlannedDay {
@@ -150,7 +150,7 @@ export class PlannerService {
 
     this.logger.log(`Plan complete — returning calendar for trip ${createdTrip.id}`);
     return firstValueFrom(
-      this.tripClient.send('get_calendar', { tripId: createdTrip.id }),
+      this.tripClient.send('get_calendar', { tripId: createdTrip.id }).pipe(timeout(15_000)),
     );
   }
 }

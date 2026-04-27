@@ -226,9 +226,9 @@ export class TripsService {
           dayType: day.dayType,
           locationLabel: day.locationLabel,
           passRecommendation: day.passRecommendation,
-          totalActivities: day.timeBlocks.reduce(
+          totalActivities: (day.timeBlocks ?? []).reduce(
             (sum, block) =>
-              sum + block.groups.reduce((s, g) => s + g.activities.length, 0),
+              sum + (block.groups ?? []).reduce((s, g) => s + (g.activities ?? []).length, 0),
             0,
           ),
         })),
